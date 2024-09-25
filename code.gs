@@ -1,5 +1,5 @@
 // Define constants for sheet names and spreadsheet ID
-const SPREADSHEET_ID = 'YOUR_SPREADSHEET_ID';  // Replace with your actual Spreadsheet ID
+const SPREADSHEET_ID = '17C3dusqWMj9WvaTKDjvmZLVtr137wv8abnfrDErHmk4';  // Replace with your actual Spreadsheet ID
 const SHEET_USERS = 'Users';   // Name of the Users sheet
 const SHEET_QUESTIONS = 'Questions';  // Name of the Questions sheet
 
@@ -14,11 +14,9 @@ function doGet() {
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
-// Function to verify login and check if within allowed date and time
 function doLogin(teamID, contactNumber) {
   const currentTime = new Date();
   
-  // Check if the current time is within the login window
   if (currentTime < LOGIN_START || currentTime > LOGIN_END) {
     return { success: false, message: 'Login not allowed at this time.' };
   }
@@ -28,13 +26,15 @@ function doLogin(teamID, contactNumber) {
   
   for (let i = 1; i < data.length; i++) {
     if (data[i][0] === teamID && data[i][3] === contactNumber) {
-      const attemptedQuestions = data[i][4] ? data[i][4].split(',') : [];
+      // Check if the user has already attempted questions
+      if (data[i][4] && data[i][4].trim() !== '') {
+        return { success: false, message: 'You have already attempted questions. Further login is not allowed.' };
+      }
       return {
         success: true,
         teamID: data[i][0],
         teamName: data[i][1],
-        teamLeader: data[i][2],
-        attemptedQuestions: attemptedQuestions
+        teamLeader: data[i][2]
       };
     }
   }
@@ -63,7 +63,6 @@ function getQuestions(teamID) {
   return questions;
 }
 
-// Function to update the sheet when a question is attempted
 function updateAttemptedQuestion(teamID, questionIDs) {
   const userSheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_USERS);
   const userData = userSheet.getDataRange().getValues();
@@ -85,7 +84,7 @@ function updateAttemptedQuestion(teamID, questionIDs) {
       
       for (let j = 1; j < questionData.length; j++) {
         if (questionData[j][0] === questionIDs) {
-          link = questionData[j][1];  // Assuming the link is in column B (index 1)
+          link = questionData[j][1];  // Link is in column B (index 1)
           break;
         }
       }
