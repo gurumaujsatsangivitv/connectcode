@@ -102,32 +102,32 @@
       }, 1000);
     }
 
-    
-function login() {
-  const teamID = document.getElementById('teamID').value;
-  const contactNumber = document.getElementById('contactNumber').value;
+   function login() {
+    const teamID = document.getElementById('teamID').value;
+    const contactNumber = document.getElementById('contactNumber').value;
 
-  document.getElementById('loginButton').innerHTML = '<div class="spinner mx-auto"></div>';
-  document.getElementById('loginButton').disabled = true;
+    document.getElementById('loginButton').innerHTML = '<div class="spinner mx-auto"></div>';
+    document.getElementById('loginButton').disabled = true;
 
-  google.script.run.withSuccessHandler(function(response) {
-    document.getElementById('loginButton').innerHTML = 'Login';
-    document.getElementById('loginButton').disabled = false;
+    google.script.run.withSuccessHandler(function(response) {
+      document.getElementById('loginButton').innerHTML = 'Login';
+      document.getElementById('loginButton').disabled = false;
 
-    if (response.success) {
-      localStorage.setItem('teamID', response.teamID);
-      localStorage.setItem('teamName', response.teamName);
-      localStorage.setItem('teamLeader', response.teamLeader);
-      showDashboard();
-    } else {
-      Swal.fire({
-        icon: 'error',
-        title: 'Login Failed',
-        text: response.message || 'Check your credentials!',
-      });
-    }
-  }).doLogin(teamID, contactNumber);
-}
+      if (response.success) {
+        localStorage.setItem('teamID', response.teamID);
+        localStorage.setItem('teamName', response.teamName);
+        localStorage.setItem('teamLeader', response.teamLeader);
+        localStorage.setItem('email', response.email);  // Store email
+        showDashboard();
+      } else {
+        Swal.fire({
+          icon: 'error',
+          title: 'Login Failed',
+          text: response.message || 'Check your credentials!',
+        });
+      }
+    }).doLogin(teamID, contactNumber);
+  }
 
     function showDashboard() {
       document.getElementById('loginForm').style.display = 'none';
@@ -223,7 +223,7 @@ function login() {
       });
     }
 
-      function showOptions(questionID) {
+    function showOptions(questionID) {
       const gridSize = 4;
       const row = Math.floor((questionID - 1) / gridSize);
       const col = (questionID - 1) % gridSize;
@@ -271,51 +271,53 @@ function login() {
       });
     }
 
-    function submitCombination(selectedOption) {
-  // Show loading spinner
-  Swal.fire({
-    title: 'Submitting...',
-    html: '<div class="spinner mx-auto"></div>',
-    showConfirmButton: false,
-    allowOutsideClick: false
-  });
+     function submitCombination(selectedOption) {
+    // Show loading spinner
+    Swal.fire({
+      title: 'Submitting...',
+      html: '<div class="spinner mx-auto"></div>',
+      showConfirmButton: false,
+      allowOutsideClick: false
+    });
 
-  google.script.run.withSuccessHandler(function(result) {
-    Swal.close(); // Close the loading spinner
+    // Join the selectedOption array into a single string
+    const questionIDs = selectedOption.join(',');
 
-    if (result.success) {
-      Swal.fire({
-        icon: 'success',
-        title: 'Combination Submitted',
-        text: 'Please attempt the Questions for the combination that you have selected.',
-        confirmButtonText: 'Go to Questions',
-      }).then((result) => {
-        if (result.isConfirmed) {
-          window.open(result.link, '_blank');
-          logout();
-        }
-      });
-    } else {
-      Swal.fire({
-        icon: 'error',
-        title: 'Submission Failed',
-        text: result.message || 'An error occurred while submitting the combination.',
-      });
-    }
-  }).updateAttemptedQuestion(localStorage.getItem('teamID'), selectedOption.join(','));
-}
+    google.script.run.withSuccessHandler(function(result) {
+      Swal.close(); // Close the loading spinner
+
+      if (result.success) {
+        Swal.fire({
+          icon: 'success',
+          title: 'Combination Submitted',
+          text: result.message,
+          confirmButtonText: 'OK',
+        }).then((result) => {
+          if (result.isConfirmed) {
+            logout();
+          }
+        });
+      } else {
+        Swal.fire({
+          icon: 'error',
+          title: 'Submission Failed',
+          text: result.message || 'An error occurred while submitting the combination.',
+        });
+      }
+    }).updateAttemptedQuestion(localStorage.getItem('teamID'), questionIDs, localStorage.getItem('email'));
+  }
 
     function logout() {
-  google.script.run.withSuccessHandler(function(response) {
-    if (response.success) {
-      localStorage.clear();
-      document.getElementById('loginForm').style.display = 'block';
-      document.getElementById('dashboard').style.display = 'none';
-      document.getElementById('teamID').value = '';
-      document.getElementById('contactNumber').value = '';
+      google.script.run.withSuccessHandler(function(response) {
+        if (response.success) {
+          localStorage.clear();
+          document.getElementById('loginForm').style.display = 'block';
+          document.getElementById('dashboard').style.display = 'none';
+          document.getElementById('teamID').value = '';
+          document.getElementById('contactNumber').value = '';
+        }
+      }).doLogout();
     }
-  }).doLogout();
-}
   </script>
 </head>
 <body class="bg-gray-100">
