@@ -1,5 +1,5 @@
 // Define constants for sheet names and spreadsheet ID
-const SPREADSHEET_ID = '17C3dusqWMj9WvaTKDjvmZLVtr137wv8abnfrDErHmk4';  // Replace with your actual Spreadsheet ID
+const SPREADSHEET_ID = '*****************';  // Replace with your actual Spreadsheet ID
 const SHEET_USERS = 'Users';   // Name of the Users sheet
 const SHEET_QUESTIONS = 'Questions';  // Name of the Questions sheet
 
@@ -34,7 +34,8 @@ function doLogin(teamID, contactNumber) {
         success: true,
         teamID: data[i][0],
         teamName: data[i][1],
-        teamLeader: data[i][2]
+        teamLeader: data[i][2],
+        email: data[i][5]  // Assuming Email ID is in column F (index 5)
       };
     }
   }
@@ -63,33 +64,49 @@ function getQuestions(teamID) {
   return questions;
 }
 
-function updateAttemptedQuestion(teamID, questionIDs) {
+function updateAttemptedQuestion(teamID, questionIDs, email) {
   const userSheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_USERS);
   const userData = userSheet.getDataRange().getValues();
   
   for (let i = 1; i < userData.length; i++) {
     if (userData[i][0] === teamID) {
-      const attemptedQuestions = userData[i][4] ? userData[i][4].split(',') : [];
+      const attemptedQuestions = userData[i][4] ? userData[i][4].toString() : '';
       
-      if (attemptedQuestions.length > 0) {
+      if (attemptedQuestions !== '') {
         return { success: false, message: 'You have already attempted questions.' };
       }
       
+      // Save the questionIDs to the Users sheet
       userSheet.getRange(i + 1, 5).setValue(questionIDs);
       
-      // Get the link for the selected combination
+      // Get the link for the saved Question ID
       const questionSheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_QUESTIONS);
       const questionData = questionSheet.getDataRange().getValues();
+      
       let link = '';
       
       for (let j = 1; j < questionData.length; j++) {
-        if (questionData[j][0] === questionIDs) {
+        if (questionData[j][0].toString() === questionIDs) {
           link = questionData[j][1];  // Link is in column B (index 1)
           break;
         }
       }
       
-      return { success: true, link: link };
+      if (!link) {
+        return { success: false, message: 'Question link not found for ID: ' + questionIDs };
+      }
+      
+      // Send email with the link
+      try {
+        MailApp.sendEmail({
+          to: email,
+          subject: "Your Question Link",
+          body: "Here is the link to your selected questions: " + link
+        });
+        return { success: true, message: 'Link sent to your email successfully.' };
+      } catch (error) {
+        return { success: false, message: 'Failed to send email. Error: ' + error.toString() };
+      }
     }
   }
   
